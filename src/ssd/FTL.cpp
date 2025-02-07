@@ -922,6 +922,9 @@ namespace SSD_Components
 
 	LPA_type FTL::Convert_host_logical_address_to_device_address(LHA_type lha)
 	{
+		// hoonhwi25
+		if(lha / page_size_in_sectors == 62411008) printf("lpa(%ld), lha(%ld)\n", lha / page_size_in_sectors, lha);
+		// hoonhwi25
 		return lha / page_size_in_sectors;
 	}
 
