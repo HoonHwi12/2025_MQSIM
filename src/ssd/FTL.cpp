@@ -11,6 +11,10 @@
 #include "FTL.h"
 #include "Stats.h"
 
+// hoonhwi25
+#include "../hoonhwi/hoon_header.h"
+// hoonhwi25
+
 namespace SSD_Components
 {
 	FTL::FTL(const sim_object_id_type& id, Data_Cache_Manager_Base* data_cache_manager,
@@ -103,8 +107,9 @@ namespace SSD_Components
 			LHA_type hot_region_end_lsa = 0, hot_lha_used_for_generation = 0;//Used for fast address generation in hot/cold traffic mode
 			LPA_type last_hot_lpa = 0;
 
-
-			if (stat->Type == Utils::Workload_Type::SYNTHETIC)
+			// hoonhwi 25: precond as synthetic
+			// if (stat->Type == Utils::Workload_Type::SYNTHETIC)
+			if (1)
 			{
 				bool is_read = false;
 				unsigned int size = 0;
@@ -287,9 +292,12 @@ namespace SSD_Components
 					unsigned int transaction_size = 0;
 					page_status_type access_status_bitmap = 0;
 					LPA_type max_lpa_within_device = Convert_host_logical_address_to_device_address(stat->Max_LHA) - Convert_host_logical_address_to_device_address(stat->Min_LHA);
+					
 					while (handled_sectors_count < size)
 					{
 						transaction_size = page_size_in_sectors - (unsigned int)(lsa % page_size_in_sectors);
+						// h_d4printf("handled_sectors_count1(%d) transaction_size(%d) page_size_in_sectors(%d) lsa(%ld) size(%d) stat->alignment_value(%d) start_LBA(%ld)\n",
+						// 	handled_sectors_count, transaction_size, page_size_in_sectors, lsa, size, stat->alignment_value, start_LBA);
 						if (handled_sectors_count + transaction_size >= size)
 						{
 							transaction_size = size - handled_sectors_count;
@@ -299,6 +307,8 @@ namespace SSD_Components
 
 						lsa = lsa + transaction_size;
 						handled_sectors_count += transaction_size;
+						// h_d4printf("handled_sectors_count2(%d) transaction_size(%d) page_size_in_sectors(%d) lsa(%ld) size(%d)\n",
+						// 	handled_sectors_count, transaction_size, page_size_in_sectors, lsa, size);
 
 						if (lpa_set_for_preconditioning.find(lpa) == lpa_set_for_preconditioning.end()) {
 							lpa_set_for_preconditioning[lpa] = access_status_bitmap;
@@ -313,9 +323,10 @@ namespace SSD_Components
 						} else {
 							lpa_set_for_preconditioning[lpa] = access_status_bitmap | lpa_set_for_preconditioning[lpa];
 						}
-					}
+					}					
 				}
 			} else {
+				// hoonhwi 25: this is for trace workload
 				//Step 1-1: Read LPAs are preferred for steady-state since each read should be written before the actual access
 				for (auto itr = stat->Write_read_shared_addresses.begin(); itr != stat->Write_read_shared_addresses.end(); itr++) {
 					LPA_type lpa = (*itr);
@@ -426,12 +437,19 @@ namespace SSD_Components
 						handled_sectors_count += transaction_size;
 					}
 				}
-			}//else of if (stat->Type == Utils::Workload_Type::SYNTHETIC)
+
+				// hoonhwi25
+				decision_dist_type = stat->Address_distribution_type;
+				// hoonhwi25
+			}
 			
+			h_d4printf("Determine the probability distribution function start\n");
 			//Step 2: Determine the probability distribution function of valid pages in blocks, in the steady-state.
 			//Note: if hot/cold separation is required, then the following estimations should be changed according to Van Houtd's paper in Performance Evaluation 2014.
 			std::vector<double> steadystate_block_status_probability;//The probability distribution function of the number of valid pages in a block in the steadystate
 			double rho = stat->Initial_occupancy_ratio * (1 - over_provisioning_ratio) / (1 - double(GC_and_WL_Unit->Get_minimum_number_of_free_pages_before_GC()) / block_no_per_plane);
+			double test = double(GC_and_WL_Unit->Get_minimum_number_of_free_pages_before_GC());
+			h_d1printf("rho(%f) stat->Initial_occupancy_ratio(%f) over_provisioning_ratio(%f), double(GC_and_WL_Unit->Get_minimum_number_of_free_pages_before_GC()(%f)\n", rho, stat->Initial_occupancy_ratio, over_provisioning_ratio, test);
 			switch (decision_dist_type) {
 			case Utils::Address_Distribution_Type::RANDOM_HOTCOLD://Estimate the steady-state of the hot/cold traffic based on the steady-state of the uniform traffic
 			{
@@ -615,8 +633,12 @@ namespace SSD_Components
 				break;
 			}
 			default:
-				PRINT_ERROR("Unhandled address distribution type in FTL's preconditioning function.")
+				// hoonhwi 2025
+				h_d1printf("decision_dist_type: %d\n", (int)decision_dist_type);
+				PRINT_ERROR("Unhandled address distribution type in FTL's preconditioning function.");
+				// hoonhwi 2025
 			}
+			h_d4printf("Determine the probability distribution function end\n");
 
 			//Step 3: Distribute LPAs over the entire flash space
 			//MQSim assigns PPAs to LPAs based on the estimated steadystate status of blocks, assuming that there is no hot/cold data separation.
@@ -631,7 +653,9 @@ namespace SSD_Components
 			if (sum > 1.001 || sum < 0.99) {
 				PRINT_ERROR("Wrong probability distribution function for the number of valid pages in flash blocks in the steady-state! It is not safe to continue preconditioning!")
 			}
+			h_d4printf("precond allocate address start\n");
 			Address_Mapping_Unit->Allocate_address_for_preconditioning(stat->Stream_id, lpa_set_for_preconditioning, steadystate_block_status_probability);
+			h_d4printf("precond allocate address end\n");
 
 			//Step 4: Touch the LPAs and bring them to CMT to warmup address mapping unit
 			if (!Address_Mapping_Unit->Is_ideal_mapping_table()) {

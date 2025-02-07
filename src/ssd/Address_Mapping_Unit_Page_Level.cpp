@@ -6,6 +6,10 @@
 #include "Stats.h"
 #include "../utils/Logical_Address_Partitioning_Unit.h"
 
+// hoonhwi25
+#include "../hoonhwi/hoon_header.h"
+// hoonhwi25
+
 namespace SSD_Components
 {
 	Cached_Mapping_Table::Cached_Mapping_Table(unsigned int capacity) : capacity(capacity)
@@ -735,7 +739,7 @@ namespace SSD_Components
 							}
 						}
 						if (assigned_lpas[plane_address.ChannelID][plane_address.ChipID][plane_address.DieID][plane_address.PlaneID].size() > 0) {
-							PRINT_ERROR("It is not possible to assign PPA to all LPAs in Allocate_address_for_preconditioning! It is not safe to continue preconditioning." << assigned_lpas[plane_address.ChannelID][plane_address.ChipID][plane_address.DieID][plane_address.PlaneID].size())
+							PRINT_ERROR("It is not possible to assign PPA to all LPAs in Allocate_address_for_preconditioning! It is not safe to continue preconditioning. Remaining LPAs: " << assigned_lpas[plane_address.ChannelID][plane_address.ChipID][plane_address.DieID][plane_address.PlaneID].size())
 						}
 					}
 				}
@@ -1798,6 +1802,7 @@ namespace SSD_Components
 	{
 		auto itr = domains[stream_id]->Locked_LPAs.find(lpa);
 		if (itr == domains[stream_id]->Locked_LPAs.end()) {
+			h_d1printf("lpa(%ld)\n", lpa);
 			PRINT_ERROR("Illegal operation: Unlocking an LPA that has not been locked!");
 		}
 		domains[stream_id]->Locked_LPAs.erase(itr);

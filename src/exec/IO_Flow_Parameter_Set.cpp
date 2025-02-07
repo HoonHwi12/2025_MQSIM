@@ -463,7 +463,25 @@ void IO_Flow_Parameter_Set_Trace_Based::XML_deserialize(rapidxml::xml_node<> *no
 				} else {
 					PRINT_ERROR("Wrong time unit specified for the trace based flow")
 				}
+			// hoonhwi25
+			} else if (strcmp(param->name(), "Address_Alignment_Unit") == 0) {
+				std::string val = param->value();
+				Address_Alignment_Unit = std::stoi(val);
 			}
+			else if (strcmp(param->name(), "Address_Distribution") == 0) {
+				std::string val = param->value();
+				std::transform(val.begin(), val.end(), val.begin(), ::toupper);
+				if (strcmp(val.c_str(), "STREAMING") == 0) {
+					Address_Distribution = Utils::Address_Distribution_Type::STREAMING;
+				} else if (strcmp(val.c_str(), "RANDOM_HOTCOLD") == 0) {
+					Address_Distribution = Utils::Address_Distribution_Type::RANDOM_HOTCOLD;
+				} else if (strcmp(val.c_str(), "RANDOM_UNIFORM") == 0) {
+					Address_Distribution = Utils::Address_Distribution_Type::RANDOM_UNIFORM;
+				} else {
+					PRINT_ERROR("Wrong address distribution type for input synthetic flow")
+				}	
+			}		
+			// hoonhwi25
 
 		}
 	} catch (...) {

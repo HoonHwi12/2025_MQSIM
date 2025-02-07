@@ -54,7 +54,7 @@ namespace Utils
 		LHA_type hot_region_end_lsa;
 		LHA_type streaming_next_address;
 		bool generate_aligned_addresses;
-		unsigned int alignment_value;;
+		unsigned int alignment_value;
 
 		Utils::Request_Generator_Type generator_type;
 		unsigned int Request_queue_depth;

@@ -62,6 +62,11 @@ public:
 	int Percentage_To_Be_Executed;
 	int Relay_Count; 
 	Trace_Time_Unit Time_Unit;
+
+	// hoonhwi25
+	unsigned int Address_Alignment_Unit;
+	Utils::Address_Distribution_Type Address_Distribution;
+	// hoonhwi25
 	
 	void XML_serialize(Utils::XmlWriter& xmlwriter);
 	void XML_deserialize(rapidxml::xml_node<> *node);
