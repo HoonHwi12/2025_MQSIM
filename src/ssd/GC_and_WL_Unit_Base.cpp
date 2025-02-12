@@ -172,9 +172,6 @@ namespace SSD_Components
 				_my_instance->block_manager->Add_erased_block_to_pool(transaction->Address);
 				_my_instance->block_manager->GC_WL_finished(transaction->Address);
 				if (_my_instance->check_static_wl_required(transaction->Address)) {
-					// *hoonhwi25
-					h_tprintf("run wearleveling\n");
-					// *hoonhwi25
 					_my_instance->run_static_wearleveling(transaction->Address);
 				}
 				_my_instance->address_mapping_unit->Start_servicing_writes_for_overfull_plane(transaction->Address);//Must be inovked after above statements since it may lead to flash page consumption for waiting program transactions
