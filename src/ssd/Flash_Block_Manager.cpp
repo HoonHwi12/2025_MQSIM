@@ -3,6 +3,9 @@
 #include "Flash_Block_Manager.h"
 #include "Stats.h"
 
+// hoonhwi25
+#include <fstream>
+// hoonhwi25
 namespace SSD_Components
 {
 	Flash_Block_Manager::Flash_Block_Manager(GC_and_WL_Unit_Base* gc_and_wl_unit, unsigned int max_allowed_block_erase_count, unsigned int total_concurrent_streams_no,
@@ -149,4 +152,47 @@ namespace SSD_Components
 	{
 		return (unsigned int) plane_manager[plane_address.ChannelID][plane_address.ChipID][plane_address.DieID][plane_address.PlaneID].Free_block_pool.size();
 	}
+
+	// hoonhwi25 - print block status
+	void Flash_Block_Manager::Print_All_Physical_Blocks_Status() 
+	{
+		const std::string& filename = "physical_status.csv";
+		std::ofstream outFile(filename);
+		if (!outFile.is_open()) {
+			std::cerr << "Error: Unable to open file " << filename << " for writing!" << std::endl;
+			return;
+		}
+
+		outFile << "Channel,Chip,Die,Plane,Block,Valid Pages,Invalid Pages,Free Pages\n";
+
+		for (unsigned int channel = 0; channel < channel_count; channel++) {
+			for (unsigned int chip = 0; chip < chip_no_per_channel; chip++) {
+				for (unsigned int die = 0; die < die_no_per_chip; die++) {
+					for (unsigned int plane = 0; plane < plane_no_per_die; plane++) {
+						
+						PlaneBookKeepingType* plane_record = &plane_manager[channel][chip][die][plane];
+						std::cout << "\nChannel " << channel << ", Chip " << chip 
+								<< ", Die " << die << ", Plane " << plane << std::endl;
+						std::cout << "--------------------------------------------------------" << std::endl;
+						std::cout << " Block ID  |  Valid Pages  |  Invalid Pages  |  Free Pages " << std::endl;
+						std::cout << "--------------------------------------------------------" << std::endl;
+
+						for (unsigned int block = 0; block < block_no_per_plane; block++) {
+							Block_Pool_Slot_Type* blk = &plane_record->Blocks[block];
+
+							unsigned int invalid_pages = blk->Invalid_page_count;
+							unsigned int free_pages = pages_no_per_block - blk->Current_page_write_index;
+							unsigned int valid_pages = pages_no_per_block - (invalid_pages + free_pages);
+
+							outFile << channel << "," << chip << "," << die << "," << plane << "," << block << ","
+								<< valid_pages << "," << invalid_pages << "," << free_pages << "\n";
+						}
+					}
+				}
+			}
+		}
+		outFile.close();
+		std::cout << "Flash Block Status exported to " << filename << std::endl;
+	}
+	// hoonhwi25 - print block status
 }
