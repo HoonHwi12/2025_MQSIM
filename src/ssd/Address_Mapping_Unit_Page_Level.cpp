@@ -1846,6 +1846,7 @@ namespace SSD_Components
 	inline void Address_Mapping_Unit_Page_Level::Remove_barrier_for_accessing_mvpn(stream_id_type stream_id, MVPN_type mvpn)
 	{
 		auto itr = domains[stream_id]->Locked_MVPNs.find(mvpn);
+		// hoonhwi25 - remove error check
 		if (itr == domains[stream_id]->Locked_MVPNs.end()) {
 			//PRINT_ERROR("Illegal operation: Unlocking an MVPN that has not been locked!");
 			h_d1printf("Illegal operation: Unlocking an MVPN that has not been locked!, but we ignore\n");
@@ -1853,6 +1854,7 @@ namespace SSD_Components
 		else {
 			domains[stream_id]->Locked_MVPNs.erase(itr);
 		}
+		// hoonhwi25 - remove error check
 
 		//If there are read requests waiting behind the barrier, then MQSim assumes they can be serviced with the actual page data that is accessed during GC execution
 		if (domains[stream_id]->MVPN_read_transactions_waiting_behind_barrier.find(mvpn) != domains[stream_id]->MVPN_read_transactions_waiting_behind_barrier.end()) {
