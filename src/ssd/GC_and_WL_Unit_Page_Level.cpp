@@ -5,6 +5,7 @@
 #include "Flash_Block_Manager.h"
 #include "FTL.h"
 
+#include "../hoonhwi/hoon_header.h"
 namespace SSD_Components
 {
 
@@ -167,6 +168,9 @@ namespace SSD_Components
 								gc_write = new NVM_Transaction_Flash_WR(Transaction_Source_Type::GC_WL, block->Stream_id, sector_no_per_page * SECTOR_SIZE_IN_BYTE,
 									NO_LPA, address_mapping_unit->Convert_address_to_ppa(gc_candidate_address), NULL, 0, NULL, 0, INVALID_TIME_STAMP);
 								gc_write->ExecutionMode = WriteExecutionModeType::COPYBACK;
+								// *hoonhwi25
+								h_tprintf("gc_wl submit write transaction ppa(%ld)\n", address_mapping_unit->Convert_address_to_ppa(gc_candidate_address));
+								// *hoonhwi25
 								tsu->Submit_transaction(gc_write);
 							} else {
 								gc_read = new NVM_Transaction_Flash_RD(Transaction_Source_Type::GC_WL, block->Stream_id, sector_no_per_page * SECTOR_SIZE_IN_BYTE,
@@ -175,7 +179,10 @@ namespace SSD_Components
 									NO_LPA, NO_PPA, gc_candidate_address, NULL, 0, gc_read, 0, INVALID_TIME_STAMP);
 								gc_write->ExecutionMode = WriteExecutionModeType::SIMPLE;
 								gc_write->RelatedErase = gc_erase_tr;
-								gc_read->RelatedWrite = gc_write;
+								gc_read->RelatedWrite = gc_write;			
+								// *hoonhwi25
+								if(address_mapping_unit->Convert_address_to_ppa(gc_candidate_address) == 62411008) h_tprintf("gc_wl submit READ transaction ppa(%ld)\n", address_mapping_unit->Convert_address_to_ppa(gc_candidate_address));
+								// *hoonhwi25					
 								tsu->Submit_transaction(gc_read);//Only the read transaction would be submitted. The Write transaction is submitted when the read transaction is finished and the LPA of the target page is determined
 							}
 							gc_erase_tr->Page_movement_activities.push_back(gc_write);

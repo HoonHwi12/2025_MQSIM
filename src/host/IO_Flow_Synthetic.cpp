@@ -3,6 +3,10 @@
 #include "../sim/Engine.h"
 #include "IO_Flow_Synthetic.h"
 
+// hoonhwi2025
+#include "../hoonhwi/hoon_header.h"
+// hoonhwi2025
+
 namespace Host_Components
 {
 IO_Flow_Synthetic::IO_Flow_Synthetic(const sim_object_id_type &name, uint16_t flow_id,
@@ -158,9 +162,12 @@ IO_Flow_Synthetic::IO_Flow_Synthetic(const sim_object_id_type &name, uint16_t fl
 
 		if (generate_aligned_addresses) {
 			request->Start_LBA -= request->Start_LBA % alignment_value;
-		}
+		}		
 		STAT_generated_request_count++;
 		request->Arrival_time = Simulator->Time();
+		// hoonhwi2025 - debug
+		h_tprintf("SLBA(%ld) LBAcount(%ld) arrival(%d)\n", request->Start_LBA, request->LBA_count, request->Arrival_time);
+		// hoonhwi2025 - debug		
 		DEBUG("* Host: Request generated - " << (request->Type == Host_IO_Request_Type::READ ? "Read, " : "Write, ") << "LBA:" << request->Start_LBA << ", Size_in_bytes:" << request->LBA_count << "")
 
 		return request;

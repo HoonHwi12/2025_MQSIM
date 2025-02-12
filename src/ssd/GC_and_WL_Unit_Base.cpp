@@ -1,5 +1,8 @@
 #include "GC_and_WL_Unit_Base.h"
 
+// *hoonhwi25
+#include "../hoonhwi/hoon_header.h"
+// *hoonhwi25
 namespace SSD_Components
 {
 	GC_and_WL_Unit_Base* GC_and_WL_Unit_Base::_my_instance;
@@ -108,6 +111,7 @@ namespace SSD_Components
 				PPA_type ppa;
 				MPPN_type mppa;
 				page_status_type page_status_bitmap;
+				
 				if (pbke->Blocks[transaction->Address.BlockID].Holds_mapping_data) {
 					_my_instance->address_mapping_unit->Get_translation_mapping_info_for_gc(transaction->Stream_id, (MVPN_type)transaction->LPA, mppa, page_status_bitmap);
 					//There has been no write on the page since GC start, and it is still valid
@@ -116,6 +120,9 @@ namespace SSD_Components
 						((NVM_Transaction_Flash_RD*)transaction)->RelatedWrite->write_sectors_bitmap = FULL_PROGRAMMED_PAGE;
 						((NVM_Transaction_Flash_RD*)transaction)->RelatedWrite->LPA = transaction->LPA;
 						((NVM_Transaction_Flash_RD*)transaction)->RelatedWrite->RelatedRead = NULL;
+						// *hoonhwi25
+						if((MVPN_type)transaction->LPA == 62411008) h_tprintf("gc submit relatedwrite LPA: %ld \n", transaction->LPA);
+						// *hoonhwi25
 						_my_instance->address_mapping_unit->Allocate_new_page_for_gc(((NVM_Transaction_Flash_RD*)transaction)->RelatedWrite, pbke->Blocks[transaction->Address.BlockID].Holds_mapping_data);
 						_my_instance->tsu->Submit_transaction(((NVM_Transaction_Flash_RD*)transaction)->RelatedWrite);
 						_my_instance->tsu->Schedule();
@@ -131,6 +138,9 @@ namespace SSD_Components
 						((NVM_Transaction_Flash_RD*)transaction)->RelatedWrite->write_sectors_bitmap = page_status_bitmap;
 						((NVM_Transaction_Flash_RD*)transaction)->RelatedWrite->LPA = transaction->LPA;
 						((NVM_Transaction_Flash_RD*)transaction)->RelatedWrite->RelatedRead = NULL;
+						// *hoonhwi25
+						if(transaction->LPA == 62411008) h_tprintf("gc submit not holding mapping relatedwrite LPA: %ld \n", transaction->LPA);
+						// *hoonhwi25
 						_my_instance->address_mapping_unit->Allocate_new_page_for_gc(((NVM_Transaction_Flash_RD*)transaction)->RelatedWrite, pbke->Blocks[transaction->Address.BlockID].Holds_mapping_data);
 						_my_instance->tsu->Submit_transaction(((NVM_Transaction_Flash_RD*)transaction)->RelatedWrite);
 						_my_instance->tsu->Schedule();
@@ -142,9 +152,16 @@ namespace SSD_Components
 			}
 			case Transaction_Type::WRITE:
 				if (pbke->Blocks[((NVM_Transaction_Flash_WR*)transaction)->RelatedErase->Address.BlockID].Holds_mapping_data) {
+					// // *hoonhwi25
+					// h_tprintf("Trying MVPN= %ld unlock\n", (MVPN_type)transaction->LPA);
+					// // *hoonhwi25
 					_my_instance->address_mapping_unit->Remove_barrier_for_accessing_mvpn(transaction->Stream_id, (MVPN_type)transaction->LPA);
 					DEBUG(Simulator->Time() << ": MVPN=" << (MVPN_type)transaction->LPA << " unlocked!!");
 				} else {
+					// *hoonhwi25
+					if((MVPN_type)transaction->LPA ==  62411008) h_tprintf("Trying LPA= %ld unlock\n", (MVPN_type)transaction->LPA);
+					//h_tprintf("Trying LPA= %ld unlock\n", (MVPN_type)transaction->LPA);
+					// *hoonhwi25
 					_my_instance->address_mapping_unit->Remove_barrier_for_accessing_lpa(transaction->Stream_id, transaction->LPA);
 					DEBUG(Simulator->Time() << ": LPA=" << (MVPN_type)transaction->LPA << " unlocked!!");
 				}
@@ -155,6 +172,9 @@ namespace SSD_Components
 				_my_instance->block_manager->Add_erased_block_to_pool(transaction->Address);
 				_my_instance->block_manager->GC_WL_finished(transaction->Address);
 				if (_my_instance->check_static_wl_required(transaction->Address)) {
+					// *hoonhwi25
+					h_tprintf("run wearleveling\n");
+					// *hoonhwi25
 					_my_instance->run_static_wearleveling(transaction->Address);
 				}
 				_my_instance->address_mapping_unit->Start_servicing_writes_for_overfull_plane(transaction->Address);//Must be inovked after above statements since it may lead to flash page consumption for waiting program transactions

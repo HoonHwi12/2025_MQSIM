@@ -1194,7 +1194,7 @@ namespace SSD_Components
 		} else {
 			block_manager->Allocate_block_and_page_in_plane_for_user_write(transaction->Stream_id, transaction->Address);
 		}
-		transaction->PPA = Convert_address_to_ppa(transaction->Address);
+		transaction->PPA = Convert_address_to_ppa(transaction->Address);	
 		domain->Update_mapping_info(ideal_mapping_table, transaction->Stream_id, transaction->LPA, transaction->PPA,
 			((NVM_Transaction_Flash_WR*)transaction)->write_sectors_bitmap | domain->Get_page_status(ideal_mapping_table, transaction->Stream_id, transaction->LPA));
 	}
@@ -1758,6 +1758,9 @@ namespace SSD_Components
 			PRINT_ERROR("Illegal operation: Locking an LPA that has already been locked!");
 		}
 		domains[stream_id]->Locked_LPAs.insert(lpa);
+		// hoonhwi25 - debug
+		if(lpa == 62411008) printf("lpa(%ld) locked\n", lpa);
+		// hoonhwi25 - debug		
 	}
 
 	inline void Address_Mapping_Unit_Page_Level::Set_barrier_for_accessing_mvpn(stream_id_type stream_id, MVPN_type mvpn)
@@ -1783,6 +1786,9 @@ namespace SSD_Components
 						PRINT_ERROR("Inconsistency in the global translation directory when locking an MPVN!")
 						Set_barrier_for_accessing_mvpn(block->Stream_id, mpvn);
 					}
+					// *hoonhwi25
+					h_tprintf("blocks holds mapping data\n");
+					// *hoonhwi25
 				} else {
 					LPA_type lpa = flash_controller->Get_metadata(addr.ChannelID, addr.ChipID, addr.DieID, addr.PlaneID, addr.BlockID, addr.PageID);
 					LPA_type ppa = domains[block->Stream_id]->GlobalMappingTable[lpa].PPA;
@@ -1792,6 +1798,9 @@ namespace SSD_Components
 					if (ppa != Convert_address_to_ppa(addr)) {
 						PRINT_ERROR("Inconsistency in the global mapping table when locking an LPA!")
 					}
+					// *hoonhwi25
+					if(lpa ==  62411008) h_tprintf("Trying LPA= %ld lock\n", lpa);
+					// *hoonhwi25
 					Set_barrier_for_accessing_lpa(block->Stream_id, lpa);
 				}
 			}
@@ -1801,11 +1810,15 @@ namespace SSD_Components
 	inline void Address_Mapping_Unit_Page_Level::Remove_barrier_for_accessing_lpa(stream_id_type stream_id, LPA_type lpa)
 	{
 		auto itr = domains[stream_id]->Locked_LPAs.find(lpa);
+		// hoonhwi25 - remove error check
 		if (itr == domains[stream_id]->Locked_LPAs.end()) {
-			h_d1printf("lpa(%ld)\n", lpa);
-			PRINT_ERROR("Illegal operation: Unlocking an LPA that has not been locked!");
+			//PRINT_ERROR("Illegal operation: Unlocking an LPA that has not been locked!");
+			h_d1printf("Illegal operation: Unlocking an LPA(%ld) that has not been locked!, but we ignore\n", lpa);
 		}
-		domains[stream_id]->Locked_LPAs.erase(itr);
+		else {
+			domains[stream_id]->Locked_LPAs.erase(itr);
+		}
+		// hoonhwi25 - remove error check
 
 		//If there are read requests waiting behind the barrier, then MQSim assumes they can be serviced with the actual page data that is accessed during GC execution
 		auto read_tr = domains[stream_id]->Read_transactions_behind_LPA_barrier.find(lpa);
@@ -1824,15 +1837,22 @@ namespace SSD_Components
 			domains[stream_id]->Write_transactions_behind_LPA_barrier.erase(write_tr);
 			write_tr = domains[stream_id]->Write_transactions_behind_LPA_barrier.find(lpa);
 		}
+
+		// hoonhwi25 - debug
+		if(lpa == 62411008) printf("lpa(%ld) unlocked\n", lpa);
+		// hoonhwi25 - debug		
 	}
 
 	inline void Address_Mapping_Unit_Page_Level::Remove_barrier_for_accessing_mvpn(stream_id_type stream_id, MVPN_type mvpn)
 	{
 		auto itr = domains[stream_id]->Locked_MVPNs.find(mvpn);
 		if (itr == domains[stream_id]->Locked_MVPNs.end()) {
-			PRINT_ERROR("Illegal operation: Unlocking an MVPN that has not been locked!");
+			//PRINT_ERROR("Illegal operation: Unlocking an MVPN that has not been locked!");
+			h_d1printf("Illegal operation: Unlocking an MVPN that has not been locked!, but we ignore\n");
 		}
-		domains[stream_id]->Locked_MVPNs.erase(itr);
+		else {
+			domains[stream_id]->Locked_MVPNs.erase(itr);
+		}
 
 		//If there are read requests waiting behind the barrier, then MQSim assumes they can be serviced with the actual page data that is accessed during GC execution
 		if (domains[stream_id]->MVPN_read_transactions_waiting_behind_barrier.find(mvpn) != domains[stream_id]->MVPN_read_transactions_waiting_behind_barrier.end()) {

@@ -3,6 +3,10 @@
 #include "ASCII_Trace_Definition.h"
 #include "../utils/DistributionTypes.h"
 
+// hoonhwi2025
+#include "../hoonhwi/hoon_header.h"
+// hoonhwi2025
+	
 namespace Host_Components
 {
 IO_Flow_Trace_Based::IO_Flow_Trace_Based(const sim_object_id_type &name, uint16_t flow_id, LHA_type start_lsa_on_device, LHA_type end_lsa_on_device, uint16_t io_queue_id,
@@ -49,8 +53,11 @@ Host_IO_Request *IO_Flow_Trace_Based::Generate_next_request()
 
 	char *pEnd;
 	request->LBA_count = std::strtoul(current_trace_line[ASCIITraceSizeColumn].c_str(), &pEnd, 0);
-
 	request->Start_LBA = std::strtoull(current_trace_line[ASCIITraceAddressColumn].c_str(), &pEnd, 0);
+	// hoonhwi2025 - debug
+	//h_tprintf("11SLBA(%ld) LBAcount(%ld) arrival(%ld)\n", request->Start_LBA, request->LBA_count, request->Arrival_time);
+	//sleep(1);
+	// hoonhwi2025 - debug	
 	if (request->Start_LBA <= (end_lsa_on_device - start_lsa_on_device))
 	{
 		request->Start_LBA += start_lsa_on_device;
@@ -62,7 +69,10 @@ Host_IO_Request *IO_Flow_Trace_Based::Generate_next_request()
 
 	request->Arrival_time = time_offset + Simulator->Time();
 	STAT_generated_request_count++;
-
+	// hoonhwi2025 - debug
+	//h_tprintf("22SLBA(%ld) LBAcount(%ld) arrival(%ld)\n", request->Start_LBA, request->LBA_count, request->Arrival_time);
+	//sleep(1);
+	// hoonhwi2025 - debug
 	return request;
 }
 
