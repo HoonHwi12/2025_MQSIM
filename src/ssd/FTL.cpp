@@ -778,6 +778,10 @@ namespace SSD_Components
 	
 	void FTL::Report_results_in_XML(std::string name_prefix, Utils::XmlWriter& xmlwriter)
 	{
+		// hoonhwi25 - print physical block
+		this->BlockManager->Print_All_Physical_Blocks_Status();
+		// hoonhwi25 - print physical block
+
 		std::string tmp = name_prefix + ".FTL";
 		xmlwriter.Write_start_element_tag(tmp);
 
