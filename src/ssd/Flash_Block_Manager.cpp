@@ -171,11 +171,6 @@ namespace SSD_Components
 					for (unsigned int plane = 0; plane < plane_no_per_die; plane++) {
 						
 						PlaneBookKeepingType* plane_record = &plane_manager[channel][chip][die][plane];
-						std::cout << "\nChannel " << channel << ", Chip " << chip 
-								<< ", Die " << die << ", Plane " << plane << std::endl;
-						std::cout << "--------------------------------------------------------" << std::endl;
-						std::cout << " Block ID  |  Valid Pages  |  Invalid Pages  |  Free Pages " << std::endl;
-						std::cout << "--------------------------------------------------------" << std::endl;
 
 						for (unsigned int block = 0; block < block_no_per_plane; block++) {
 							Block_Pool_Slot_Type* blk = &plane_record->Blocks[block];
