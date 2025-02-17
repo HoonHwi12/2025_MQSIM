@@ -63,6 +63,10 @@ namespace SSD_Components
 				}
 				if (_my_instance->block_manager->Block_has_ongoing_gc_wl(transaction->Address)) {
 					if (_my_instance->block_manager->Can_execute_gc_wl(transaction->Address)) {
+						//h_tprintf("ongoingGC(%d) canexecuteGC(%d)\n",
+						//	_my_instance->block_manager->Block_has_ongoing_gc_wl(transaction->Address), _my_instance->block_manager->Can_execute_gc_wl(transaction->Address));
+						//h_tprintf("ch(%d) chip(%d) die(%d) plane(%d) blk(%d)\n",
+						//	transaction->Address.ChannelID, transaction->Address.ChipID, transaction->Address.DieID, transaction->Address.PlaneID, transaction->Address.BlockID);
 						NVM::FlashMemory::Physical_Page_Address gc_wl_candidate_address(transaction->Address);
 						Block_Pool_Slot_Type* block = &pbke->Blocks[transaction->Address.BlockID];
 						Stats::Total_gc_executions++;
@@ -71,9 +75,11 @@ namespace SSD_Components
 						
 						//If there are some valid pages in block, then prepare flash transactions for page movement
 						if (block->Current_page_write_index - block->Invalid_page_count > 0) {
-							//address_mapping_unit->Lock_physical_block_for_gc(gc_candidate_address);//Lock the block, so no user request can intervene while the GC is progressing
 							NVM_Transaction_Flash_RD* gc_wl_read = NULL;
 							NVM_Transaction_Flash_WR* gc_wl_write = NULL;
+							// hoonhwi25 - fix bug
+							//_my_instance->address_mapping_unit->Set_barrier_for_accessing_physical_block(gc_wl_candidate_address);
+							// hoonhwi25 - fix bug
 							for (flash_page_ID_type pageID = 0; pageID < block->Current_page_write_index; pageID++) {
 								if (_my_instance->block_manager->Is_page_valid(block, pageID)) {
 									Stats::Total_page_movements_for_gc++;
@@ -160,7 +166,6 @@ namespace SSD_Components
 				} else {
 					// *hoonhwi25
 					if((MVPN_type)transaction->LPA ==  62411008) h_tprintf("Trying LPA= %ld unlock\n", (MVPN_type)transaction->LPA);
-					//h_tprintf("Trying LPA= %ld unlock\n", (MVPN_type)transaction->LPA);
 					// *hoonhwi25
 					_my_instance->address_mapping_unit->Remove_barrier_for_accessing_lpa(transaction->Stream_id, transaction->LPA);
 					DEBUG(Simulator->Time() << ": LPA=" << (MVPN_type)transaction->LPA << " unlocked!!");
@@ -168,7 +173,15 @@ namespace SSD_Components
 				pbke->Blocks[((NVM_Transaction_Flash_WR*)transaction)->RelatedErase->Address.BlockID].Erase_transaction->Page_movement_activities.remove((NVM_Transaction_Flash_WR*)transaction);
 				break;
 			case Transaction_Type::ERASE:
-				pbke->Ongoing_erase_operations.erase(pbke->Ongoing_erase_operations.find(transaction->Address.BlockID));
+				// hoonhwi25 - bug fix
+				auto it = pbke->Ongoing_erase_operations.find(transaction->Address.BlockID);
+				if (it == pbke->Ongoing_erase_operations.end()) {
+					PRINT_ERROR("Error: BlockID not found in Ongoing_erase_operations");
+					return;
+				}
+				pbke->Ongoing_erase_operations.erase(it);
+				//pbke->Ongoing_erase_operations.erase(pbke->Ongoing_erase_operations.find(transaction->Address.BlockID));
+				// hoonhwi25 - bug fix
 				_my_instance->block_manager->Add_erased_block_to_pool(transaction->Address);
 				_my_instance->block_manager->GC_WL_finished(transaction->Address);
 				if (_my_instance->check_static_wl_required(transaction->Address)) {
@@ -277,7 +290,7 @@ namespace SSD_Components
 		Block_Pool_Slot_Type* block = &pbke->Blocks[wl_candidate_block_id];
 
 		//Run the state machine to protect against race condition
-		block_manager->GC_WL_started(wl_candidate_block_id);
+		block_manager->GC_WL_started(wl_candidate_address);
 		pbke->Ongoing_erase_operations.insert(wl_candidate_block_id);
 		address_mapping_unit->Set_barrier_for_accessing_physical_block(wl_candidate_address);//Lock the block, so no user request can intervene while the GC is progressing
 		if (block_manager->Can_execute_gc_wl(wl_candidate_address)) {//If there are ongoing requests targeting the candidate block, the gc execution should be postponed

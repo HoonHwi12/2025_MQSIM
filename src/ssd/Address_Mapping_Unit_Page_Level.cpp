@@ -1755,12 +1755,13 @@ namespace SSD_Components
 	{
 		auto itr = domains[stream_id]->Locked_LPAs.find(lpa);
 		if (itr != domains[stream_id]->Locked_LPAs.end()) {
+			//h_d1printf("Illegal operation: Locking an LPA that has already been locked!, LPA(%ld), but we ignored\n", lpa);
 			PRINT_ERROR("Illegal operation: Locking an LPA that has already been locked!");
+			abort();
 		}
-		domains[stream_id]->Locked_LPAs.insert(lpa);
-		// hoonhwi25 - debug
-		if(lpa == 62411008) printf("lpa(%ld) locked\n", lpa);
-		// hoonhwi25 - debug		
+		else {
+			domains[stream_id]->Locked_LPAs.insert(lpa);
+		}
 	}
 
 	inline void Address_Mapping_Unit_Page_Level::Set_barrier_for_accessing_mvpn(stream_id_type stream_id, MVPN_type mvpn)
@@ -1768,8 +1769,12 @@ namespace SSD_Components
 		auto itr = domains[stream_id]->Locked_MVPNs.find(mvpn);
 		if (itr != domains[stream_id]->Locked_MVPNs.end()) {
 			PRINT_ERROR("Illegal operation: Locking an MVPN that has already been locked!");
+			abort();
 		}
 		domains[stream_id]->Locked_MVPNs.insert(mvpn);
+		// hoonhwi25 - debug
+		if(mvpn == 62411008) printf("mvpn(%ld) locked\n", mvpn);
+		// hoonhwi25 - debug		
 	}
 
 	inline void Address_Mapping_Unit_Page_Level::Set_barrier_for_accessing_physical_block(const NVM::FlashMemory::Physical_Page_Address& block_address)
@@ -1777,18 +1782,18 @@ namespace SSD_Components
 		//The LPAs are actually not known until they are read one-by-one from flash storage. But, to reduce MQSim's complexity, we assume that LPAs are stored in DRAM and thus no read from flash storage is needed.
 		Block_Pool_Slot_Type* block = &(block_manager->plane_manager[block_address.ChannelID][block_address.ChipID][block_address.DieID][block_address.PlaneID].Blocks[block_address.BlockID]);
 		NVM::FlashMemory::Physical_Page_Address addr(block_address);
-		for (flash_page_ID_type pageID = 0; pageID < block->Current_page_write_index; pageID++) {
+		for (flash_page_ID_type pageID = 0; pageID < block->Current_page_write_index; pageID++) {		
 			if (block_manager->Is_page_valid(block, pageID)) {
 				addr.PageID = pageID;
 				if (block->Holds_mapping_data) {
 					MVPN_type mpvn = (MVPN_type)flash_controller->Get_metadata(addr.ChannelID, addr.ChipID, addr.DieID, addr.PlaneID, addr.BlockID, addr.PageID);
+					// *hoonhwi25
+					if(mpvn ==  62411008) h_tprintf("Trying mpvn= %ld lock\n", mpvn);
+					// *hoonhwi25
 					if (domains[block->Stream_id]->GlobalTranslationDirectory[mpvn].MPPN != Convert_address_to_ppa(addr)) {
 						PRINT_ERROR("Inconsistency in the global translation directory when locking an MPVN!")
 						Set_barrier_for_accessing_mvpn(block->Stream_id, mpvn);
 					}
-					// *hoonhwi25
-					h_tprintf("blocks holds mapping data\n");
-					// *hoonhwi25
 				} else {
 					LPA_type lpa = flash_controller->Get_metadata(addr.ChannelID, addr.ChipID, addr.DieID, addr.PlaneID, addr.BlockID, addr.PageID);
 					LPA_type ppa = domains[block->Stream_id]->GlobalMappingTable[lpa].PPA;
@@ -1812,8 +1817,10 @@ namespace SSD_Components
 		auto itr = domains[stream_id]->Locked_LPAs.find(lpa);
 		// hoonhwi25 - remove error check
 		if (itr == domains[stream_id]->Locked_LPAs.end()) {
-			//PRINT_ERROR("Illegal operation: Unlocking an LPA that has not been locked!");
-			h_d1printf("Illegal operation: Unlocking an LPA(%ld) that has not been locked!, but we ignore\n", lpa);
+			h_tprintf("lpa(%ld)\n", lpa);
+			PRINT_ERROR("Illegal operation: Unlocking an LPA that has not been locked!");
+			//h_d1printf("Illegal operation: Unlocking an LPA(%ld) that has not been locked!, but we ignore\n", lpa);
+			abort();
 		}
 		else {
 			domains[stream_id]->Locked_LPAs.erase(itr);
@@ -1848,8 +1855,9 @@ namespace SSD_Components
 		auto itr = domains[stream_id]->Locked_MVPNs.find(mvpn);
 		// hoonhwi25 - remove error check
 		if (itr == domains[stream_id]->Locked_MVPNs.end()) {
-			//PRINT_ERROR("Illegal operation: Unlocking an MVPN that has not been locked!");
-			h_d1printf("Illegal operation: Unlocking an MVPN that has not been locked!, but we ignore\n");
+			PRINT_ERROR("Illegal operation: Unlocking an MVPN that has not been locked!");
+			//h_d1printf("Illegal operation: Unlocking an MVPN that has not been locked!, but we ignore\n");
+			abort();
 		}
 		else {
 			domains[stream_id]->Locked_MVPNs.erase(itr);

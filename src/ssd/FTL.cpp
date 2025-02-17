@@ -448,8 +448,8 @@ namespace SSD_Components
 			//Note: if hot/cold separation is required, then the following estimations should be changed according to Van Houtd's paper in Performance Evaluation 2014.
 			std::vector<double> steadystate_block_status_probability;//The probability distribution function of the number of valid pages in a block in the steadystate
 			double rho = stat->Initial_occupancy_ratio * (1 - over_provisioning_ratio) / (1 - double(GC_and_WL_Unit->Get_minimum_number_of_free_pages_before_GC()) / block_no_per_plane);
-			double test = double(GC_and_WL_Unit->Get_minimum_number_of_free_pages_before_GC());
-			h_d1printf("rho(%f) stat->Initial_occupancy_ratio(%f) over_provisioning_ratio(%f), double(GC_and_WL_Unit->Get_minimum_number_of_free_pages_before_GC()(%f)\n", rho, stat->Initial_occupancy_ratio, over_provisioning_ratio, test);
+			int test = GC_and_WL_Unit->Get_minimum_number_of_free_pages_before_GC();
+			h_d1printf("rho(%f) stat->Initial_occupancy_ratio(%f) over_provisioning_ratio(%f), minimum_number_of_free_pages_before_GC()(%d)\n", rho, stat->Initial_occupancy_ratio, over_provisioning_ratio, test);
 			switch (decision_dist_type) {
 			case Utils::Address_Distribution_Type::RANDOM_HOTCOLD://Estimate the steady-state of the hot/cold traffic based on the steady-state of the uniform traffic
 			{
@@ -926,9 +926,6 @@ namespace SSD_Components
 
 	LPA_type FTL::Convert_host_logical_address_to_device_address(LHA_type lha)
 	{
-		// hoonhwi25 - debug
-		if(lha / page_size_in_sectors == 62411008) printf("lpa(%ld), lha(%ld)\n", lha / page_size_in_sectors, lha);
-		// hoonhwi25 - debug
 		return lha / page_size_in_sectors;
 	}
 

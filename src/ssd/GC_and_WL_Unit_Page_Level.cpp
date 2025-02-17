@@ -145,6 +145,9 @@ namespace SSD_Components
 				return;
 			}
 			
+			//printf("gc started: ch(%d) chip(%d) die(%d) plane(%d) blk(%d): ongoing gc true\n",
+			//gc_candidate_address.ChannelID, gc_candidate_address.ChipID, gc_candidate_address.DieID,gc_candidate_address.PlaneID, gc_candidate_address.BlockID);
+
 			//Run the state machine to protect against race condition
 			block_manager->GC_WL_started(gc_candidate_address);
 			pbke->Ongoing_erase_operations.insert(gc_candidate_block_id);
@@ -168,9 +171,6 @@ namespace SSD_Components
 								gc_write = new NVM_Transaction_Flash_WR(Transaction_Source_Type::GC_WL, block->Stream_id, sector_no_per_page * SECTOR_SIZE_IN_BYTE,
 									NO_LPA, address_mapping_unit->Convert_address_to_ppa(gc_candidate_address), NULL, 0, NULL, 0, INVALID_TIME_STAMP);
 								gc_write->ExecutionMode = WriteExecutionModeType::COPYBACK;
-								// *hoonhwi25
-								h_tprintf("gc_wl submit write transaction ppa(%ld)\n", address_mapping_unit->Convert_address_to_ppa(gc_candidate_address));
-								// *hoonhwi25
 								tsu->Submit_transaction(gc_write);
 							} else {
 								gc_read = new NVM_Transaction_Flash_RD(Transaction_Source_Type::GC_WL, block->Stream_id, sector_no_per_page * SECTOR_SIZE_IN_BYTE,
